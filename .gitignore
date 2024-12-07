@@ -1,0 +1,28 @@
+# MacOS
+.DS_Store
+
+# Windows
+Thumbs.db
+
+# Visual Studio
+.vs
+.vsconfig
+
+# VS Code
+.vscode
+
+# JetBrains
+.idea
+*.DotSettings.user
+
+# Gradle
+.gradle
+
+# AWS Toolkit
+aws-logger-errors.txt
+
+# Mono
+mono_crash*
+
+# Node
+node_modules
