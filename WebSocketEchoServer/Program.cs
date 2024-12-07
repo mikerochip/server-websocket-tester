@@ -10,10 +10,6 @@ var builder = WebApplication.CreateBuilder();
 var app = builder.Build();
 app.UseWebSockets();
 
-const int maxMessageSize = 1024 * 4;
-var overflowMessage = new string('x', maxMessageSize + 1);
-var overflowMessageBuffer = Encoding.UTF8.GetBytes(overflowMessage);
-
 #region Routes
 app.Map("/hello", async context => await context.Response.WriteAsync("Hello!"));
 
@@ -26,9 +22,9 @@ app.Map("/", async context =>
             nextSocketId = 1;
         else
             ++nextSocketId;
-        
+
         Console.WriteLine($"[{nextSocketId}] Conn: {context.Connection.Id}");
-        
+
         using var webSocket = await context.WebSockets.AcceptWebSocketAsync();
         try
         {
@@ -56,10 +52,15 @@ return;
 #region Helper Methods
 async Task EchoAsync(ulong socketId, WebSocket webSocket)
 {
-    var intentionalOverflowCounter = 1;
-    
+    const int maxMessageSize = 1024 * 4;
+
+    const int intentionalOverflowMaxEchoes = 4;
+    var intentionalOverflowCounter = 0;
+    var overflowMessage = new string('x', maxMessageSize + 1);
+    var overflowMessageBuffer = Encoding.UTF8.GetBytes(overflowMessage);
+
     var receiveBuffer = new byte[maxMessageSize];
-    
+
     var receiveResult = await webSocket.ReceiveAsync(
         new ArraySegment<byte>(receiveBuffer), CancellationToken.None);
 
@@ -73,13 +74,13 @@ async Task EchoAsync(ulong socketId, WebSocket webSocket)
         string sendMessage;
         int sendMessageSize;
         WebSocketMessageType sendType;
-        if (intentionalOverflowCounter == -1)
+        if (intentionalOverflowCounter >= intentionalOverflowMaxEchoes)
         {
             sendBuffer = overflowMessageBuffer;
             sendMessage = overflowMessage;
             sendMessageSize = overflowMessage.Length;
             sendType = WebSocketMessageType.Text;
-            intentionalOverflowCounter = 1;
+            intentionalOverflowCounter = 0;
         }
         else
         {
@@ -90,22 +91,7 @@ async Task EchoAsync(ulong socketId, WebSocket webSocket)
             ++intentionalOverflowCounter;
         }
         Console.WriteLine($"[{socketId}] Send: [{type}] {sendMessage[..1024]}");
-        
-        await webSocket.SendAsync(
-            new ArraySegment<byte>(sendBuffer, 0, sendMessageSize),
-            sendType,
-            true,
-            CancellationToken.None);
-        await webSocket.SendAsync(
-            new ArraySegment<byte>(sendBuffer, 0, sendMessageSize),
-            sendType,
-            true,
-            CancellationToken.None);
-        await webSocket.SendAsync(
-            new ArraySegment<byte>(sendBuffer, 0, sendMessageSize),
-            sendType,
-            true,
-            CancellationToken.None);
+
         await webSocket.SendAsync(
             new ArraySegment<byte>(sendBuffer, 0, sendMessageSize),
             sendType,
