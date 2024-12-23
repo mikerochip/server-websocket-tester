@@ -2,13 +2,24 @@ using System.Net;
 using System.Net.WebSockets;
 using System.Text;
 
-#region Main
+#region Startup
 Console.Title = "WebSocket Server";
 
-var builder = WebApplication.CreateBuilder();
+var loggerFactory = LoggerFactory.Create(loggingBuilder =>
+    loggingBuilder.AddSimpleConsole(options =>
+    {
+        options.IncludeScopes = false;
+        options.SingleLine = true;
+        options.TimestampFormat = "HH:mm:ss.ffff ";
+    }));
+var logger = loggerFactory.CreateLogger("Echo");
+#endregion
 
+#region WebApplication Setup
+var builder = WebApplication.CreateBuilder();
 var app = builder.Build();
 app.UseWebSockets();
+#endregion
 
 #region Routes
 app.Map("/hello", async context => await context.Response.WriteAsync("Hello!"));
@@ -23,7 +34,7 @@ app.Map("/", async context =>
         else
             ++nextSocketId;
 
-        Console.WriteLine($"[{nextSocketId}] Conn: {context.Connection.Id}");
+        logger.LogInformation("[{SocketId}] Conn: {ConnectionId}", nextSocketId, context.Connection.Id);
 
         using var webSocket = await context.WebSockets.AcceptWebSocketAsync();
         try
@@ -36,7 +47,7 @@ app.Map("/", async context =>
                 throw;
         }
 
-        Console.WriteLine($"[{nextSocketId}] DC: {context.Connection.Id}");
+        logger.LogInformation("[{SocketId}] DC: {ConnectionId}", nextSocketId, context.Connection.Id);
     }
     else
     {
@@ -45,6 +56,7 @@ app.Map("/", async context =>
 });
 #endregion
 
+#region Main
 await app.RunAsync();
 return;
 #endregion
@@ -53,6 +65,7 @@ return;
 async Task EchoAsync(ulong socketId, WebSocket webSocket)
 {
     const int maxMessageSize = 1024 * 4;
+    const int maxMessageLogSize = 1024;
 
     const int intentionalOverflowMaxEchoes = 4;
     var intentionalOverflowCounter = 0;
@@ -68,7 +81,7 @@ async Task EchoAsync(ulong socketId, WebSocket webSocket)
     {
         var type = receiveResult.MessageType == WebSocketMessageType.Text ? "Txt" : "Bin";
         var message = Encoding.UTF8.GetString(receiveBuffer);
-        Console.WriteLine($"[{socketId}] Recv: [{type}] {message}");
+        logger.LogInformation("[{SocketId}] Recv: [{MessageType}] {Message}", socketId, type, message);
 
         byte[] sendBuffer;
         string sendMessage;
@@ -90,7 +103,8 @@ async Task EchoAsync(ulong socketId, WebSocket webSocket)
             sendType = receiveResult.MessageType;
             ++intentionalOverflowCounter;
         }
-        Console.WriteLine($"[{socketId}] Send: [{type}] {sendMessage[..1024]}");
+        logger.LogInformation("[{SocketId}] Send: [{MessageType}] {Message}",
+            socketId, type, sendMessage[..maxMessageLogSize]);
 
         await webSocket.SendAsync(
             new ArraySegment<byte>(sendBuffer, 0, sendMessageSize),
