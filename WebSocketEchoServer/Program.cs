@@ -66,8 +66,9 @@ async Task EchoAsync(ulong socketId, WebSocket webSocket)
 {
     const int maxMessageSize = 1024 * 4;
     const int maxMessageLogSize = 1024;
+    // make this less than 0 to stop intentional overflows
+    const int intentionalOverflowMaxEchoes = -1;
 
-    const int intentionalOverflowMaxEchoes = 4;
     var intentionalOverflowCounter = 0;
     var overflowMessage = new string('x', maxMessageSize + 1);
     var overflowMessageBuffer = Encoding.UTF8.GetBytes(overflowMessage);
@@ -87,7 +88,7 @@ async Task EchoAsync(ulong socketId, WebSocket webSocket)
         string sendMessage;
         int sendMessageSize;
         WebSocketMessageType sendType;
-        if (intentionalOverflowCounter >= intentionalOverflowMaxEchoes)
+        if (intentionalOverflowMaxEchoes >= 0 && intentionalOverflowCounter >= intentionalOverflowMaxEchoes)
         {
             sendBuffer = overflowMessageBuffer;
             sendMessage = overflowMessage;
