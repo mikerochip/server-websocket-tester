@@ -29,17 +29,14 @@ app.Map("/", async context =>
 {
     if (context.WebSockets.IsWebSocketRequest)
     {
-        if (nextSocketId == ulong.MaxValue)
-            nextSocketId = 1;
-        else
-            ++nextSocketId;
+        var socketId = nextSocketId == ulong.MaxValue ? nextSocketId = 1 : ++nextSocketId;
 
-        logger.LogInformation("[{SocketId}] Conn: {ConnectionId}", nextSocketId, context.Connection.Id);
+        logger.LogInformation("[{SocketId}] Conn: {ConnectionId}", socketId, context.Connection.Id);
 
         using var webSocket = await context.WebSockets.AcceptWebSocketAsync();
         try
         {
-            await EchoAsync(nextSocketId, webSocket);
+            await EchoAsync(socketId, webSocket);
         }
         catch (WebSocketException e)
         {
@@ -47,7 +44,7 @@ app.Map("/", async context =>
                 throw;
         }
 
-        logger.LogInformation("[{SocketId}] DC: {ConnectionId}", nextSocketId, context.Connection.Id);
+        logger.LogInformation("[{SocketId}] DC: {ConnectionId}", socketId, context.Connection.Id);
     }
     else
     {
