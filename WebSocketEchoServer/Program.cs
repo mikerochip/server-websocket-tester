@@ -78,7 +78,7 @@ async Task EchoAsync(ulong socketId, WebSocket webSocket)
     while (!receiveResult.CloseStatus.HasValue)
     {
         var type = receiveResult.MessageType == WebSocketMessageType.Text ? "Txt" : "Bin";
-        var message = Encoding.UTF8.GetString(receiveBuffer);
+        var message = Encoding.UTF8.GetString(receiveBuffer, 0, receiveResult.Count);
         logger.LogInformation("[{SocketId}] Recv: [{MessageType}] {Message}", socketId, type, message);
 
         byte[] sendBuffer;
