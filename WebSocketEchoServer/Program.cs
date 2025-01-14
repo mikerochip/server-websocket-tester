@@ -101,8 +101,10 @@ async Task EchoAsync(ulong socketId, WebSocket webSocket)
             sendType = receiveResult.MessageType;
             ++intentionalOverflowCounter;
         }
+
+        var messageLogSize = Math.Min(sendMessageSize, maxMessageSize);
         logger.LogInformation("[{SocketId}] Send: [{MessageType}] {Message}",
-            socketId, type, sendMessage[..maxMessageLogSize]);
+            socketId, type, sendMessage[..messageLogSize]);
 
         await webSocket.SendAsync(
             new ArraySegment<byte>(sendBuffer, 0, sendMessageSize),
