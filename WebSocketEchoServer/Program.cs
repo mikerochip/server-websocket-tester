@@ -1,4 +1,5 @@
 //#define FORCED_MESSAGE_BINARY
+//#define SERVER_INITIATED_CLOSURE
 
 using System.Net;
 using System.Net.WebSockets;
@@ -38,9 +39,11 @@ app.Map("/", async context =>
         using var webSocket = await context.WebSockets.AcceptWebSocketAsync();
         try
         {
-            // this tests a server-initiated closure
-            //await webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, string.Empty, CancellationToken.None);
+            #if SERVER_INITIATED_CLOSURE
+            await webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, string.Empty, CancellationToken.None);
+            #else
             await EchoAsync(socketId, webSocket);
+            #endif
         }
         catch (WebSocketException e)
         {
