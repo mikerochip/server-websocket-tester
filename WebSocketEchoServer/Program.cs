@@ -1,9 +1,14 @@
-//#define FORCED_MESSAGE_BINARY
-//#define SERVER_INITIATED_CLOSURE
-
 using System.Net;
 using System.Net.WebSockets;
 using System.Text;
+
+#region Config Constants
+const int maxEchoesUntilForcedMessage = -1;
+const bool binaryForcedMessage = false;
+const WebSocketMessageType forcedMessageType = binaryForcedMessage ? WebSocketMessageType.Binary : WebSocketMessageType.Text;
+
+const bool initiateCloseAfterConnect = false;
+#endregion
 
 #region Startup
 Console.Title = "WebSocket Server";
@@ -39,11 +44,10 @@ app.Map("/", async context =>
         using var webSocket = await context.WebSockets.AcceptWebSocketAsync();
         try
         {
-            #if SERVER_INITIATED_CLOSURE
-            await webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, string.Empty, CancellationToken.None);
-            #else
-            await EchoAsync(socketId, webSocket);
-            #endif
+            if (initiateCloseAfterConnect)
+                await webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, string.Empty, CancellationToken.None);
+            else
+                await EchoAsync(socketId, webSocket);
         }
         catch (WebSocketException e)
         {
@@ -71,19 +75,21 @@ async Task EchoAsync(ulong socketId, WebSocket webSocket)
     const int maxMessageSize = 1024 * 4;
 
     // make this less than 0 to not send forced messages
-    const int maxEchoesUntilForcedMessage = 1;
     var echoesUntilForcedMessage = 0;
 
-    #if FORCED_MESSAGE_BINARY
-    const WebSocketMessageType forcedMessageType = WebSocketMessageType.Binary;
-    // sample message from https://github.com/mikerochip/unity-websocket/issues/25#issuecomment-2610624605
-    var forcedMessage = "kwWaAQAAAAAAAACRAJCWlZIAzPCSAc0B4JICzQSwkgPNCWCSBM1dwJOSAMzwkgHNBLCSAs0JYJaSAMzwkgHNAtCSAs0EsJIDzQ4QkgTNLuCSBc1dwJQBAgMEkgID3AAYkwHCwpMCwsKTA8LDkwTCwpMFwsKTBsLCkwfCw5MIwsKTCcPCkwrDwpMLw8OTDMPCkw3DwpMOwsKTD8LCkxPCwpMUwsKTFcLDkxbDwpMXwsKTGMLCkxnCwpMaw8KTG8LD";
-    var forcedMessageBuffer = Convert.FromBase64String(forcedMessage);
-    #else
-    const WebSocketMessageType forcedMessageType = WebSocketMessageType.Text;
-    var forcedMessage = new string('x', maxMessageSize + 1);
-    var forcedMessageBuffer = Encoding.UTF8.GetBytes(forcedMessage);
-    #endif
+    string forcedMessage;
+    byte[] forcedMessageBuffer;
+    if (binaryForcedMessage)
+    {
+        // sample message from https://github.com/mikerochip/unity-websocket/issues/25#issuecomment-2610624605
+        forcedMessage = "kwWaAQAAAAAAAACRAJCWlZIAzPCSAc0B4JICzQSwkgPNCWCSBM1dwJOSAMzwkgHNBLCSAs0JYJaSAMzwkgHNAtCSAs0EsJIDzQ4QkgTNLuCSBc1dwJQBAgMEkgID3AAYkwHCwpMCwsKTA8LDkwTCwpMFwsKTBsLCkwfCw5MIwsKTCcPCkwrDwpMLw8OTDMPCkw3DwpMOwsKTD8LCkxPCwpMUwsKTFcLDkxbDwpMXwsKTGMLCkxnCwpMaw8KTG8LD";
+        forcedMessageBuffer = Convert.FromBase64String(forcedMessage);
+    }
+    else
+    {
+        forcedMessage = new string('x', maxMessageSize + 1);
+        forcedMessageBuffer = Encoding.UTF8.GetBytes(forcedMessage);
+    }
 
     var receiveBuffer = new byte[maxMessageSize];
 
