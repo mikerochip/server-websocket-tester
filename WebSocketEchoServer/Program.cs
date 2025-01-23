@@ -1,3 +1,5 @@
+//#define FORCED_MESSAGE_BINARY
+
 using System.Net;
 using System.Net.WebSockets;
 using System.Text;
@@ -64,13 +66,21 @@ return;
 async Task EchoAsync(ulong socketId, WebSocket webSocket)
 {
     const int maxMessageSize = 1024 * 4;
-    const int maxMessageLogSize = 1024;
-    // make this less than 0 to stop intentional overflows
-    const int intentionalOverflowMaxEchoes = -1;
 
-    var intentionalOverflowCounter = 0;
-    var overflowMessage = new string('x', maxMessageSize + 1);
-    var overflowMessageBuffer = Encoding.UTF8.GetBytes(overflowMessage);
+    // make this less than 0 to not send forced messages
+    const int maxEchoesUntilForcedMessage = 1;
+    var echoesUntilForcedMessage = 0;
+
+    #if FORCED_MESSAGE_BINARY
+    const WebSocketMessageType forcedMessageType = WebSocketMessageType.Binary;
+    // sample message from https://github.com/mikerochip/unity-websocket/issues/25#issuecomment-2610624605
+    var forcedMessage = "kwWaAQAAAAAAAACRAJCWlZIAzPCSAc0B4JICzQSwkgPNCWCSBM1dwJOSAMzwkgHNBLCSAs0JYJaSAMzwkgHNAtCSAs0EsJIDzQ4QkgTNLuCSBc1dwJQBAgMEkgID3AAYkwHCwpMCwsKTA8LDkwTCwpMFwsKTBsLCkwfCw5MIwsKTCcPCkwrDwpMLw8OTDMPCkw3DwpMOwsKTD8LCkxPCwpMUwsKTFcLDkxbDwpMXwsKTGMLCkxnCwpMaw8KTG8LD";
+    var forcedMessageBuffer = Convert.FromBase64String(forcedMessage);
+    #else
+    const WebSocketMessageType forcedMessageType = WebSocketMessageType.Text;
+    var forcedMessage = new string('x', maxMessageSize + 1);
+    var forcedMessageBuffer = Encoding.UTF8.GetBytes(forcedMessage);
+    #endif
 
     var receiveBuffer = new byte[maxMessageSize];
 
@@ -87,13 +97,13 @@ async Task EchoAsync(ulong socketId, WebSocket webSocket)
         string sendMessage;
         int sendMessageSize;
         WebSocketMessageType sendType;
-        if (intentionalOverflowMaxEchoes >= 0 && intentionalOverflowCounter >= intentionalOverflowMaxEchoes)
+        if (maxEchoesUntilForcedMessage >= 0 && echoesUntilForcedMessage >= maxEchoesUntilForcedMessage)
         {
-            sendBuffer = overflowMessageBuffer;
-            sendMessage = overflowMessage;
-            sendMessageSize = overflowMessage.Length;
-            sendType = WebSocketMessageType.Text;
-            intentionalOverflowCounter = 0;
+            sendBuffer = forcedMessageBuffer;
+            sendMessage = forcedMessage;
+            sendMessageSize = forcedMessageBuffer.Length;
+            sendType = forcedMessageType;
+            echoesUntilForcedMessage = 0;
         }
         else
         {
@@ -101,7 +111,7 @@ async Task EchoAsync(ulong socketId, WebSocket webSocket)
             sendMessage = message;
             sendMessageSize = receiveResult.Count;
             sendType = receiveResult.MessageType;
-            ++intentionalOverflowCounter;
+            ++echoesUntilForcedMessage;
         }
 
         var messageLogSize = Math.Min(sendMessageSize, maxMessageSize);
