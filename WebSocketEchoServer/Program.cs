@@ -36,6 +36,8 @@ app.Map("/", async context =>
         using var webSocket = await context.WebSockets.AcceptWebSocketAsync();
         try
         {
+            // this tests a server-initiated closure
+            //await webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, string.Empty, CancellationToken.None);
             await EchoAsync(socketId, webSocket);
         }
         catch (WebSocketException e)
