@@ -1,0 +1,36 @@
+# SCM
+.git/
+.gitignore
+*/*.md
+
+# Docker
+.dockerignore
+Dockerfile
+.env
+
+# Builds
+bin/
+obj/
+out/
+
+# User-specific
+*.user
+*.rsuser
+*.suo
+*.userosscache
+*.sln.docstates
+
+# IDE
+.vs/
+.vscode/
+.idea/
+*.DotSettings*
+
+# Logs
+[Ll]ogs/
+*.log
+
+# OS
+*.tmp
+.DS_Store
+Thumbs.db
