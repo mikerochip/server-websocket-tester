@@ -19,4 +19,6 @@ The test server is written in C# using ASP.NET. This should work on Windows, Mac
    * You can open the `WebSocketEchoServer.csproj` in any C# IDE and run it
    * You can also do `dotnet run` in a terminal after changing directories to the `.csproj` directory
 1. When you run the server, note the line that says `Now listening on: http://localhost:5182`
-1. You'll want to use that for your websocket's server url, but swap `http` for `ws` e.g. `ws://localhost:5182`
+1. In Unity, swap the `http` for `ws` then use that as the Url in your `WebSocketConnection` component
+   * ex `ws://localhost:5182`
+   * or `wss://localhost:7026`

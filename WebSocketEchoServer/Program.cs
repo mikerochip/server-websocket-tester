@@ -25,7 +25,24 @@ var logger = loggerFactory.CreateLogger("Echo");
 
 #region WebApplication Setup
 var builder = WebApplication.CreateBuilder();
+
+// configure kestrel with bundled cert iff cert vars are set
+var pfxFilePath = Environment.GetEnvironmentVariable("PFX_FILE_PATH");
+var pfxPassword = Environment.GetEnvironmentVariable("PFX_PASSWORD");
+if (!string.IsNullOrEmpty(pfxFilePath) && !string.IsNullOrEmpty(pfxPassword))
+{
+    builder.WebHost.ConfigureKestrel(serverOptions =>
+    {
+        serverOptions.ListenAnyIP(80);
+        serverOptions.ListenAnyIP(443, listenOptions =>
+        {
+            listenOptions.UseHttps(pfxFilePath, pfxPassword);
+        });
+    });
+}
+
 var app = builder.Build();
+app.UseHttpsRedirection();
 app.UseWebSockets();
 #endregion
 
