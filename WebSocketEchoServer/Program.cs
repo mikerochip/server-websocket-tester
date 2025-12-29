@@ -29,6 +29,8 @@ var builder = WebApplication.CreateBuilder();
 // configure kestrel with bundled cert iff cert vars are set
 var pfxFilePath = Environment.GetEnvironmentVariable("PFX_FILE_PATH");
 var pfxPassword = Environment.GetEnvironmentVariable("PFX_PASSWORD");
+logger.LogInformation("PFX_FILE_PATH is: \"{CertFilePath}\"", pfxFilePath);
+logger.LogInformation("PFX_PASSWORD set: {CertPasswordDetected}", !string.IsNullOrEmpty(pfxPassword));
 if (!string.IsNullOrEmpty(pfxFilePath) && !string.IsNullOrEmpty(pfxPassword))
 {
     builder.WebHost.ConfigureKestrel(serverOptions =>
