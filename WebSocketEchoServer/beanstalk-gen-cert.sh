@@ -2,10 +2,10 @@
 set -eo pipefail
 
 # Setup prompted inputs
-if [[ -z "$BEANSTALK_ENV_DOMAIN" ]]; then
-    read -rp "Beanstalk Env Domain (set BEANSTALK_ENV_DOMAIN to skip this): " BEANSTALK_ENV_DOMAIN
-    if [[ -z "$BEANSTALK_ENV_DOMAIN" ]]; then
-        echo "Missing BEANSTALK_ENV_DOMAIN"
+if [[ -z "$DOMAIN" ]]; then
+    read -rp "Cert Domain (set DOMAIN to skip this): " DOMAIN
+    if [[ -z "$DOMAIN" ]]; then
+        echo "Missing DOMAIN"
         exit 1
     fi
 fi
@@ -23,42 +23,40 @@ fi
 
 # Setup inputs
 PfxFileName="websocket-tester.pfx"
-FriendlyName="websocket-tester"
 Subject="/CN=websocket-tester"
 SanEntries=(
     "DNS:localhost"
     "IP:127.0.0.1"
-    "DNS:$BEANSTALK_ENV_DOMAIN"
+    "DNS:$DOMAIN"
 )
 San="$(IFS=,; echo "${SanEntries[*]}")"
 
 # Use temp files for generating cert before converting to pfx
-TempKeyFile="$(mktemp).key"
-TempCertFile="$(mktemp).crt"
+TempCertFile="$(mktemp).pem"
+TempKeyFile="$(mktemp).pem"
 # cleanup even on error
 cleanup() { rm -f "$TempKeyFile" "$TempCertFile"; }
 trap cleanup EXIT
 
 # Generate self-signed cert with SANs via -addext
 echo "ℹ️ Generate cert..."
-openssl req -x509 -newkey rsa:2048 \
+openssl req -x509 \
+    -newkey rsa:2048 \
     -days 825 \
     -nodes \
-    -keyout "$TempKeyFile" \
     -out "$TempCertFile" \
+    -keyout "$TempKeyFile" \
     -subj "$Subject" \
-    -addext "subjectAltName=$San" \
-    -addext "keyUsage=critical,digitalSignature,keyEncipherment" \
-    -addext "extendedKeyUsage=serverAuth,clientAuth"
+    -addext "subjectAltName=$San"
 
 # Export to PFX
 echo "ℹ️ Export pfx..."
 openssl pkcs12 -export \
+    -macalg SHA1 -certpbe PBE-SHA1-3DES -keypbe PBE-SHA1-3DES \
     -inkey "$TempKeyFile" \
     -in "$TempCertFile" \
     -out "$PfxFileName" \
-    -name "$FriendlyName" \
-    -passout "pass:$PFX_PASSWORD"
+    -password "pass:$PFX_PASSWORD"
 
 echo "✅ Generated $PfxFileName"
 
