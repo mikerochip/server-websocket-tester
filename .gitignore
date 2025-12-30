@@ -20,6 +20,7 @@ Thumbs.db
 
 # AWS
 aws-logger-errors.txt
+*[Bb]eanstalk*.zip
 
 # Mono
 mono_crash*
