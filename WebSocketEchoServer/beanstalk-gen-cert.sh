@@ -40,6 +40,7 @@ cleanup() { rm -f "$TempKeyFile" "$TempCertFile"; }
 trap cleanup EXIT
 
 # Generate self-signed cert with SANs via -addext
+echo "ℹ️ Generate cert..."
 openssl req -x509 -newkey rsa:2048 \
     -days 825 \
     -nodes \
@@ -51,6 +52,7 @@ openssl req -x509 -newkey rsa:2048 \
     -addext "extendedKeyUsage=serverAuth,clientAuth"
 
 # Export to PFX
+echo "ℹ️ Export pfx..."
 openssl pkcs12 -export \
     -inkey "$TempKeyFile" \
     -in "$TempCertFile" \
@@ -62,8 +64,8 @@ echo "✅ Generated $PfxFileName"
 
 echo ""
 
-echo "Validate $PfxFileName:"
-openssl pkcs12 -info -clcerts -nokeys \
-    -in $PfxFileName \
-    -passin "pass:$PFX_PASSWORD" | \
-    openssl x509 -noout -text
+echo "Dump \"$PfxFileName\"..."
+openssl pkcs12 -info -clcerts -nokeys -in $PfxFileName -passin "pass:$PFX_PASSWORD" \
+    | openssl x509 -noout -text
+
+echo "✅ Dumped $PfxFileName"
