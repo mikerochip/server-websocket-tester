@@ -1,9 +1,13 @@
 #!/usr/bin/env bash
 set -eo pipefail
 
-zip -r Beanstalk.zip . \
+ZipFileName="Beanstalk.zip"
+
+rm -rf $ZipFileName
+zip -r $ZipFileName . \
     -x "*.DS_Store" \
     -x "__MACOSX" \
     -x "bin/*" \
     -x "obj/*" \
-    -x ".idea/*"
+    -x ".idea/*" \
+    -x "*.sh"
